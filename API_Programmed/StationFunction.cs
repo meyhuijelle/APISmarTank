@@ -202,5 +202,54 @@ namespace API_Programmed
             }
 
         }
+
+        [FunctionName("test")]
+        public static async Task<IActionResult> test(
+       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "gasStations/euro95")] HttpRequest req,
+       ILogger log)
+        {
+
+            try
+            {
+                string connectionString = Environment.GetEnvironmentVariable("SQLSERVER");
+
+                List<Tankstation> tankStations = new List<Tankstation>();
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    await connection.OpenAsync();
+
+                    using (SqlCommand sqlCommand = new SqlCommand())
+                    {
+                        sqlCommand.Connection = connection;
+                        sqlCommand.CommandText = "SELECT * FROM Tankstations WHERE gastype = 'euro95'";
+
+                        var reader = await sqlCommand.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            tankStations.Add(new Tankstation()
+                            {
+                                Coords = reader["Coords"].ToString(),
+                                Adres = reader["Adres"].ToString(),
+                                Naam = reader["StationNaam"].ToString(),
+                                Gastype = reader["GasType"].ToString(),
+                                Price = double.Parse(reader["Price"].ToString())
+                            });
+
+                        }
+
+                    }
+                }
+                return new OkObjectResult(tankStations);
+            }
+            catch (Exception ex)
+            {
+
+                log.LogError(ex.ToString());
+                return new StatusCodeResult(500);
+            }
+
+        }
     }
 }
