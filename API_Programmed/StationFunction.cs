@@ -109,7 +109,7 @@ namespace API_Programmed
 
         [FunctionName("addGasStationsEuro95")]
         public static async Task<IActionResult> addGasStationsEuro95(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "gasStations/euro95")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "gasStations/gastype")] HttpRequest req,
             ILogger log)
         {
 
@@ -126,7 +126,14 @@ namespace API_Programmed
                     using (SqlCommand sqlCommand = new SqlCommand())
                     {
                         sqlCommand.Connection = connection;
-
+                        //opletten in postman is het naam!!!
+                        //{
+                        //    "coords" : "51.041028, 3.398512",
+                        //    "Adres": "Oeselgem",
+                        //    "Naam" : "shell",
+                        //    "GasType": "euro95",
+                        //    "Price": 1.1
+                        //}
                         sqlCommand.CommandText = "INSERT INTO Tankstations VALUES(@Coords, @Adres, @StationNaam, @Gastype, @Price)";
 
                         sqlCommand.Parameters.AddWithValue("@Coords", registration.Coords);
@@ -203,10 +210,10 @@ namespace API_Programmed
 
         }
 
-        [FunctionName("test")]
-        public static async Task<IActionResult> test(
-       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "gasStations/euro95")] HttpRequest req,
-       ILogger log)
+        [FunctionName("GetGasStationsEuro98")]
+        public static async Task<IActionResult> GetGasStationsEuro98(
+           [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "gasStations/euro98")] HttpRequest req,
+           ILogger log)
         {
 
             try
@@ -222,7 +229,7 @@ namespace API_Programmed
                     using (SqlCommand sqlCommand = new SqlCommand())
                     {
                         sqlCommand.Connection = connection;
-                        sqlCommand.CommandText = "SELECT * FROM Tankstations WHERE gastype = 'euro95'";
+                        sqlCommand.CommandText = "SELECT * FROM Tankstations WHERE gastype = 'euro98'";
 
                         var reader = await sqlCommand.ExecuteReaderAsync();
 
@@ -251,5 +258,57 @@ namespace API_Programmed
             }
 
         }
+
+        [FunctionName("GetGasStationsDiesel")]
+        public static async Task<IActionResult> GetGasStationsDiesel(
+         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "gasStations/diesel")] HttpRequest req,
+         ILogger log)
+        {
+
+            try
+            {
+                string connectionString = Environment.GetEnvironmentVariable("SQLSERVER");
+
+                List<Tankstation> tankStations = new List<Tankstation>();
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    await connection.OpenAsync();
+
+                    using (SqlCommand sqlCommand = new SqlCommand())
+                    {
+                        sqlCommand.Connection = connection;
+                        sqlCommand.CommandText = "SELECT * FROM Tankstations WHERE gastype = 'diesel'";
+
+                        var reader = await sqlCommand.ExecuteReaderAsync();
+
+                        while (await reader.ReadAsync())
+                        {
+                            tankStations.Add(new Tankstation()
+                            {
+                                Coords = reader["Coords"].ToString(),
+                                Adres = reader["Adres"].ToString(),
+                                Naam = reader["StationNaam"].ToString(),
+                                Gastype = reader["GasType"].ToString(),
+                                Price = double.Parse(reader["Price"].ToString())
+                            });
+
+                        }
+
+                    }
+                }
+                return new OkObjectResult(tankStations);
+            }
+            catch (Exception ex)
+            {
+
+                log.LogError(ex.ToString());
+                return new StatusCodeResult(500);
+            }
+
+        }
+
+
+
     }
 }
