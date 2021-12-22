@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using API_Programmed.Models;
 using System.Data.SqlClient;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace API_Programmed
 {
@@ -298,6 +299,58 @@ namespace API_Programmed
                     }
                 }
                 return new OkObjectResult(tankStations);
+            }
+            catch (Exception ex)
+            {
+
+                log.LogError(ex.ToString());
+                return new StatusCodeResult(500);
+            }
+
+        }
+
+        [FunctionName("GetAverageGasPrice")]
+        public static async Task<IActionResult> GetAverageGasPrice(
+           [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "AverageGasPrice/{stationName}")] HttpRequest req,
+           string stationName,
+           ILogger log)
+        {
+
+            try
+            {
+                string connectionString = Environment.GetEnvironmentVariable("SQLSERVER");
+
+                Average average = new Average();
+                
+
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    await connection.OpenAsync();
+
+
+                    using (SqlCommand sqlCommand = new SqlCommand())
+                    {
+
+                        sqlCommand.Connection = connection;
+                        sqlCommand.CommandText = $"SELECT AVG(Price) as averagePrice FROM Tankstations WHERE StationNaam = '{stationName}'";
+
+                        var reader = await sqlCommand.ExecuteReaderAsync();
+                        Debug.WriteLine("hier zijn we dan!");
+                        
+
+                        while (await reader.ReadAsync())
+                        {
+                            Debug.WriteLine(reader["averagePrice"]);
+                            average.Avg = (decimal)reader["averagePrice"];
+                            //Debug.WriteLine(sum);
+                        }
+
+
+                    }
+                }
+                //return new OkObjectResult($"Average : {"String.Format("{0:0.##}", sum)}");
+                return new OkObjectResult(average);
+
             }
             catch (Exception ex)
             {
